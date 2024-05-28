@@ -1,40 +1,19 @@
 package br.com.murilo;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Objects;
 
 public class Main {
     public static void main(String[] args) {
 
-        String directoryPath = "";
+        String directoryPath = "C:\\Users\\muril\\Downloads";
 
         File directory = new File(directoryPath);
-
-        try {
-
-        } catch (IOException | NoSuchAlgorithmException e) {
-
-        }
-
-        for (File f : Objects.requireNonNull(directory.listFiles())) {
-            System.out.println(f.getName());
-            System.out.println("\n");
-        }
+        DuplicateFileFinder duplicateFileFinder = new DuplicateFileFinder();
+        duplicateFileFinder.mainProcess(directory);
     }
 
-
-    public static void findDuplicates() {
-
-    }
-
-    public static String calculateFileHash() {
-
-        return null;
-    }
-
-
-
+    //TODO: Finalizar lógica de busca de arquivos duplicados
+    //TODO: Otimizar busca dos arquivos
+    //TODO: Implemetar a busca por arquivos velhos no sistema
+    //TODO: Fazer uma interface para a aplicação no Swing
 }
