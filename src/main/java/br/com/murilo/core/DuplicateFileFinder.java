@@ -1,4 +1,4 @@
-package br.com.murilo;
+package br.com.murilo.core;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 
 public class DuplicateFileFinder {
 
@@ -13,9 +14,8 @@ public class DuplicateFileFinder {
 
     public void  mainProcess(File directory) {
         if (directory.isDirectory()) {
-
-            Map<Long, List<File>> filesBySize = new HashMap<>();
-            listFilesBySize(directory, filesBySize);
+            ForkJoinPool pool = new ForkJoinPool();
+            Map<Long, List<File>> filesBySize = pool.invoke(new FileGroup(directory));
             try {
                 findDuplicates(filesBySize);
             } catch (IOException | NoSuchAlgorithmException e) {
@@ -25,7 +25,6 @@ public class DuplicateFileFinder {
             System.out.println("The provided path is not a directory");
         }
     }
-
 
     public void findDuplicates(Map<Long, List<File>> filesBySize) throws NoSuchAlgorithmException, IOException {
         Map<String, String> fileHashes = new HashMap<>();
@@ -47,19 +46,6 @@ public class DuplicateFileFinder {
         System.out.println("-----------------------------------------------------------------------------------");
     }
 
-    private void listFilesBySize(File directory, Map<Long, List<File>> filesBySize) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for(File file : files) {
-                if (file.isFile()) {
-                    filesBySize.computeIfAbsent(file.length(), k -> new ArrayList<>()).add(file);
-                } else if (file.isDirectory()) {
-                    listFilesBySize(file, filesBySize);
-                }
-            }
-        }
-    }
-
     public String calculateFileHash(File file) throws NoSuchAlgorithmException, IOException {
         MessageDigest digest = MessageDigest.getInstance(HASH);
 
@@ -72,7 +58,6 @@ public class DuplicateFileFinder {
             }
         }
 
-        // Transforma os bytes do hash em uma string hexadecimal
         byte[] bytes = digest.digest();
         StringBuilder builder = new StringBuilder();
 
@@ -82,14 +67,4 @@ public class DuplicateFileFinder {
 
         return builder.toString();
     }
-
-//Uso de Threads para Leitura de Arquivos:
-//
-//Se você tiver muitos arquivos, a leitura e o hash de arquivos podem ser paralelizadas usando threads para aproveitar os múltiplos núcleos do processador.
-//Otimização de I/O:
-//
-//Garantir que a leitura de arquivos seja feita de forma eficiente, possivelmente ajustando o tamanho dos buffers ou utilizando técnicas de I/O assíncrono.
-//Pré-filtragem por Tamanho de Arquivo:
-//
-//Antes de calcular os hashes, agrupar os arquivos pelo seu tamanho. Arquivos com tamanhos diferentes não podem ser duplicatas, então você pode evitar calcular o hash de arquivos de tamanhos diferentes.
 }
