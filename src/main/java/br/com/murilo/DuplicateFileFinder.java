@@ -13,9 +13,11 @@ public class DuplicateFileFinder {
 
     public void  mainProcess(File directory) {
         if (directory.isDirectory()) {
-            Map<String, List<String>> fileHashes = new HashMap<>();
+
+            Map<Long, List<File>> filesBySize = new HashMap<>();
+            listFilesBySize(directory, filesBySize);
             try {
-                findDuplicates(directory, fileHashes);
+                findDuplicates(filesBySize);
             } catch (IOException | NoSuchAlgorithmException e) {
                 e.printStackTrace();
             }
@@ -25,35 +27,37 @@ public class DuplicateFileFinder {
     }
 
 
-    public void findDuplicates(File directory, Map<String, List<String>> fileHashes) throws NoSuchAlgorithmException, IOException {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for(File file : files) {
-                if (file.isDirectory()) {
-                    findDuplicates(file, fileHashes);
-                } else if (file.isFile()) {
-                    String hash = calculateFileHash(file);
-                    if (fileHashes.containsKey(hash)) {
-                        fileHashes.get(hash).add(file.getAbsolutePath());
-                        //System.out.println("Duplicate found: " + file.getAbsolutePath() + "  |||||||  " + fileHashes.get(hash));
+    public void findDuplicates(Map<Long, List<File>> filesBySize) throws NoSuchAlgorithmException, IOException {
+        Map<String, String> fileHashes = new HashMap<>();
+
+        for(List<File> files : filesBySize.values()) {
+            if (files.size() > 1) {
+                for (File file : files) {
+                    String hashKey = calculateFileHash(file);
+                    if (fileHashes.containsKey(hashKey)) {
+                        String existFilePath = fileHashes.get(hashKey);
+                        System.out.println("Arquivo duplicado: " + file.getAbsolutePath());
+                        System.out.println("Arquivo existente: " + existFilePath);
                     } else {
-                        List<String> listValues = new ArrayList<>();
-                        listValues.add(file.getAbsolutePath());
-                        fileHashes.put(hash, listValues);
+                        fileHashes.put(hashKey, file.getAbsolutePath());
                     }
                 }
             }
-            listDuplicates(fileHashes);
-            System.out.println("-----------------------------------------------------------------------------------");
         }
+        System.out.println("-----------------------------------------------------------------------------------");
     }
 
-    private void listDuplicates(Map<String, List<String>> fileHashes) {
-        fileHashes.forEach((hash, list) -> {
-            if (list.size() > 1) {
-                System.out.println("Duplicates found: " + list);
+    private void listFilesBySize(File directory, Map<Long, List<File>> filesBySize) {
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for(File file : files) {
+                if (file.isFile()) {
+                    filesBySize.computeIfAbsent(file.length(), k -> new ArrayList<>()).add(file);
+                } else if (file.isDirectory()) {
+                    listFilesBySize(file, filesBySize);
+                }
             }
-        });
+        }
     }
 
     public String calculateFileHash(File file) throws NoSuchAlgorithmException, IOException {
@@ -78,4 +82,14 @@ public class DuplicateFileFinder {
 
         return builder.toString();
     }
+
+//Uso de Threads para Leitura de Arquivos:
+//
+//Se você tiver muitos arquivos, a leitura e o hash de arquivos podem ser paralelizadas usando threads para aproveitar os múltiplos núcleos do processador.
+//Otimização de I/O:
+//
+//Garantir que a leitura de arquivos seja feita de forma eficiente, possivelmente ajustando o tamanho dos buffers ou utilizando técnicas de I/O assíncrono.
+//Pré-filtragem por Tamanho de Arquivo:
+//
+//Antes de calcular os hashes, agrupar os arquivos pelo seu tamanho. Arquivos com tamanhos diferentes não podem ser duplicatas, então você pode evitar calcular o hash de arquivos de tamanhos diferentes.
 }
