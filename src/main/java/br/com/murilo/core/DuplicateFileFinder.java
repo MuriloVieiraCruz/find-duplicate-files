@@ -12,38 +12,38 @@ public class DuplicateFileFinder {
 
     private static final String HASH = "SHA-256";
 
-    public void  mainProcess(File directory) {
+    public List<File>  mainProcess(File directory) {
         if (directory.isDirectory()) {
             ForkJoinPool pool = new ForkJoinPool();
             Map<Long, List<File>> filesBySize = pool.invoke(new FileGroup(directory));
             try {
-                findDuplicates(filesBySize);
+                return findDuplicates(filesBySize);
             } catch (IOException | NoSuchAlgorithmException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         } else {
             System.out.println("The provided path is not a directory");
+            return null;
         }
     }
 
-    public void findDuplicates(Map<Long, List<File>> filesBySize) throws NoSuchAlgorithmException, IOException {
+    public List<File> findDuplicates(Map<Long, List<File>> filesBySize) throws NoSuchAlgorithmException, IOException {
         Map<String, String> fileHashes = new HashMap<>();
+        List<File> duplicates = new ArrayList<>();
 
         for(List<File> files : filesBySize.values()) {
             if (files.size() > 1) {
                 for (File file : files) {
                     String hashKey = calculateFileHash(file);
                     if (fileHashes.containsKey(hashKey)) {
-                        String existFilePath = fileHashes.get(hashKey);
-                        System.out.println("Arquivo duplicado: " + file.getAbsolutePath());
-                        System.out.println("Arquivo existente: " + existFilePath);
+                        duplicates.add(file);
                     } else {
                         fileHashes.put(hashKey, file.getAbsolutePath());
                     }
                 }
             }
         }
-        System.out.println("-----------------------------------------------------------------------------------");
+        return duplicates;
     }
 
     public String calculateFileHash(File file) throws NoSuchAlgorithmException, IOException {
