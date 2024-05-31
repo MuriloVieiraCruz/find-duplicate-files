@@ -15,6 +15,7 @@ public class MainView extends JFrame {
     private JTextField directoryField;
 
     public MainView() {
+        setWindowsLookAndFeel();
         createView();
 
         setTitle("DFF Application");
@@ -55,20 +56,30 @@ public class MainView extends JFrame {
         topPanel.add(searchButton, gbc);
 
         JTextArea outputArea = new JTextArea();
+        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         outputArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(outputArea);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         scrollPane.setPreferredSize(new Dimension(400, 200));
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Duplicates Found:"));
         panel.add(scrollPane, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 10));
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
-        JButton actionButton = new JButton("Delete");
-        bottomPanel.add(actionButton, BorderLayout.WEST);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        JButton deleteButton = new JButton("Delete");
+        buttonPanel.add(deleteButton);
+        bottomPanel.add(buttonPanel, BorderLayout.WEST);
 
+        JPanel checkBoxPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        checkBoxPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         JCheckBox checkBox = new JCheckBox("Filter Old Files");
-        bottomPanel.add(checkBox, BorderLayout.EAST);
+        checkBoxPanel.add(checkBox);
+        bottomPanel.add(checkBoxPanel, BorderLayout.EAST);
+
 
         searchButton.addActionListener(new ActionListener() {
             @Override
@@ -98,4 +109,18 @@ public class MainView extends JFrame {
             }
         });
     }
+
+    private void setWindowsLookAndFeel() {
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Windows".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

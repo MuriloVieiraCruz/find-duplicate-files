@@ -7,8 +7,4 @@ public class Main {
 
         new MainView().setVisible(true);
     }
-
-    //TODO: Implementar exclusão de arquivos
-    //TODO: Implemetar a busca por arquivos velhos no sistema
-    //TODO: Fazer uma interface para a aplicação no Swing
 }
