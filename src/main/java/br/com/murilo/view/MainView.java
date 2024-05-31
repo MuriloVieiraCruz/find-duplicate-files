@@ -1,18 +1,23 @@
 package br.com.murilo.view;
 
 import br.com.murilo.core.DuplicateFileFinder;
+import br.com.murilo.view.components.table.DuplicateTableModel;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainView extends JFrame {
 
     private JTextField directoryField;
+    private JProgressBar progressBar;
+    private JTable table;
 
     public MainView() {
         setWindowsLookAndFeel();
@@ -26,6 +31,9 @@ public class MainView extends JFrame {
     }
 
     private void createView() {
+
+        DuplicateTableModel model = new DuplicateTableModel(new ArrayList<>());
+
         JPanel panel = new JPanel();
         getContentPane().add(panel);
         panel.setLayout(new BorderLayout(10, 10));
@@ -55,10 +63,22 @@ public class MainView extends JFrame {
         gbc.weightx = 0;
         topPanel.add(searchButton, gbc);
 
-        JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        outputArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(outputArea);
+        progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        progressBar.setVisible(false);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        topPanel.add(progressBar, gbc);
+
+        table = new JTable(model);
+        table.setPreferredScrollableViewportSize(new Dimension(400, 200));
+        table.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        table.setFillsViewportHeight(true);
+        panel.add(table, BorderLayout.CENTER);
+
+        JScrollPane scrollPane = new JScrollPane(table);
 
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         scrollPane.setPreferredSize(new Dimension(400, 200));
@@ -98,13 +118,71 @@ public class MainView extends JFrame {
                     return;
                 }
 
-                DuplicateFileFinder duplicateFileFinder = new DuplicateFileFinder();
-                List<File> duplicates = duplicateFileFinder.mainProcess(directory);
+                progressBar.setVisible(true);
+                searchButton.setEnabled(false);
 
-                if (duplicates.isEmpty()) {
-                    outputArea.setText("No duplicates found");
+                SwingWorker<List<File>, Void> worker = new SwingWorker<>() {
+
+                    @Override
+                    protected List<File> doInBackground() throws Exception {
+                        DuplicateFileFinder duplicateFileFinder = new DuplicateFileFinder();
+                        return duplicateFileFinder.mainProcess(directory);
+                    }
+
+                    @Override
+                    protected void done() {
+                        try {
+                            List<File> duplicates = get();
+                            if (duplicates.isEmpty()) {
+                                JOptionPane.showMessageDialog(panel, "No duplicates found");
+                            } else {
+                                DuplicateTableModel model = new DuplicateTableModel(duplicates);
+                                table.setModel(model);
+                            }
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(panel, "An error occurred during the search.");
+                        } finally {
+                            progressBar.setVisible(false);
+                            searchButton.setEnabled(true);
+                        }
+                    }
+                };
+                worker.execute();
+            }
+        });
+
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int[] selectedRows = table.getSelectedRows();
+                DuplicateTableModel model = (DuplicateTableModel) table.getModel();
+
+                if (selectedRows.length >= 1 && !model.isEmpty()) {
+                    int option = JOptionPane.showConfirmDialog(panel,
+                            "You really want to remove these files?",
+                            "Remove",
+                            JOptionPane.YES_NO_OPTION);
+
+                    if (option == JOptionPane.YES_OPTION) {
+                        List<File> selectedFiles = new ArrayList<>();
+
+                        for (int selectedRow : selectedRows) {
+                            selectedFiles.add(model.get(selectedRow));
+                        }
+
+                        selectedFiles.forEach(file -> {
+                            if (file.delete()) {
+                                JOptionPane.showMessageDialog(panel,"File " + file.getAbsolutePath() + " deleted successfully.");
+                            } else {
+                                JOptionPane.showMessageDialog(panel,"Failed to delete file " + file.getAbsolutePath() + ".");
+                            }
+                        });
+
+                        model.remove(selectedFiles);
+                        table.updateUI();
+                    }
                 } else {
-                    outputArea.setText("Duplicates found:\n" + duplicates.stream().map(File::getAbsolutePath).collect(Collectors.joining("\n")));
+                    JOptionPane.showMessageDialog(panel, "Please, select one line at least");
                 }
             }
         });
