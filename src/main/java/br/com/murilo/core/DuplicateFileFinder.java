@@ -15,19 +15,14 @@ import java.util.concurrent.ForkJoinPool;
 
 public class DuplicateFileFinder {
 
-    public List<File>  mainProcess(File directory) {
-        if (directory.isDirectory()) {
-            ForkJoinPool pool = ForkJoinPoolFactory.createPool();
-            Map<Long, List<File>> filesBySize = pool.invoke(new FileGroup(directory));
-            try {
-                FileHasher fileHasher = new SHA256FileHash();
-                return new FindDuplicateCommand(fileHasher).execute(filesBySize);
-            } catch (IOException | NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            System.out.println("The provided path is not a directory");
-            return null;
+    public List<File>  findDuplicates(File directory) {
+        ForkJoinPool pool = ForkJoinPoolFactory.createPool();
+        Map<Long, List<File>> filesBySize = pool.invoke(new FileGroup(directory));
+        try {
+            FileHasher fileHasher = new SHA256FileHash();
+            return new FindDuplicateCommand(fileHasher).execute(filesBySize);
+        } catch (IOException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 }

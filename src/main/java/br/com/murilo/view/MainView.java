@@ -9,9 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainView extends JFrame {
 
@@ -94,13 +92,6 @@ public class MainView extends JFrame {
         buttonPanel.add(deleteButton);
         bottomPanel.add(buttonPanel, BorderLayout.WEST);
 
-        JPanel checkBoxPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        checkBoxPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        JCheckBox checkBox = new JCheckBox("Filter Old Files");
-        checkBoxPanel.add(checkBox);
-        bottomPanel.add(checkBoxPanel, BorderLayout.EAST);
-
-
         searchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -126,7 +117,7 @@ public class MainView extends JFrame {
                     @Override
                     protected List<File> doInBackground() throws Exception {
                         DuplicateFileFinder duplicateFileFinder = new DuplicateFileFinder();
-                        return duplicateFileFinder.mainProcess(directory);
+                        return duplicateFileFinder.findDuplicates(directory);
                     }
 
                     @Override
@@ -171,12 +162,12 @@ public class MainView extends JFrame {
                         }
 
                         selectedFiles.forEach(file -> {
-                            if (file.delete()) {
-                                JOptionPane.showMessageDialog(panel,"File " + file.getAbsolutePath() + " deleted successfully.");
-                            } else {
+                            if (!file.delete()) {
                                 JOptionPane.showMessageDialog(panel,"Failed to delete file " + file.getAbsolutePath() + ".");
                             }
                         });
+
+                        JOptionPane.showMessageDialog(panel,selectedFiles.size() + " files deleted successfully.");
 
                         model.remove(selectedFiles);
                         table.updateUI();
